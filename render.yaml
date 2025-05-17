@@ -3,8 +3,6 @@ services:
     name: task-manager
     runtime: docker
     plan: free
-    buildCommand: ""
-    startCommand: ""
     dockerfilePath: ./Dockerfile
     envVars:
       - key: APP_NAME
@@ -16,7 +14,7 @@ services:
       - key: LOG_CHANNEL
         value: stderr
       - key: APP_KEY
-        sync: false
+        generateValue: true
       - key: APP_URL
         fromService:
           type: web
@@ -28,6 +26,10 @@ services:
           property: connectionString
       - key: DB_CONNECTION
         value: pgsql
+      - key: COMPOSER_MEMORY_LIMIT
+        value: -1
+      - key: NODE_OPTIONS
+        value: --max-old-space-size=400
 
 databases:
   - name: task-manager-db

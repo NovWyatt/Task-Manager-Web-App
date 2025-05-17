@@ -12,9 +12,7 @@ RUN apt-get update && apt-get install -y \
     unzip \
     git \
     curl \
-    libpq-dev \
-    && curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
-    && apt-get install -y nodejs
+    libpq-dev
 
 # Clear cache
 RUN apt-get clean && rm -rf /var/lib/apt/lists/*
@@ -28,29 +26,27 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 # Enable Apache modules
 RUN a2enmod rewrite headers
 
-# Copy only necessary files for composer first
+# Copy only composer files and install with --no-dev for production
 COPY composer.json composer.lock ./
 
-# Install PHP dependencies
-RUN composer install --no-scripts --no-autoloader --no-interaction --prefer-dist
+# Install PHP dependencies with memory limit
+RUN php -d memory_limit=-1 /usr/bin/composer install --no-dev --no-scripts --no-interaction
 
-# Copy package.json for npm
-COPY package.json package-lock.json ./
-
-# Install JS dependencies with production flag to reduce memory usage
-RUN npm ci --only=production
-
-# Now copy the rest of the application
+# Now copy the application code
 COPY . .
 
-# Finish composer installation and optimize
-RUN composer dump-autoload --optimize \
-    && php artisan optimize:clear \
-    && php artisan config:cache \
-    && php artisan route:cache
+# Run composer scripts and autoload generation
+RUN php -d memory_limit=-1 /usr/bin/composer dump-autoload --optimize
 
-# Build frontend assets with reduced memory usage
-RUN NODE_OPTIONS=--max_old_space_size=256 npm run build
+# Install Node.js (LTS version)
+RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
+    && apt-get install -y nodejs
+
+# Build frontend assets only if package.json exists
+RUN if [ -f "package.json" ]; then \
+    npm ci --production && \
+    npm run build; \
+    fi
 
 # Set permissions
 RUN chown -R www-data:www-data /var/www/html \
@@ -66,5 +62,5 @@ RUN sed -ri -e 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf
 # Expose port
 EXPOSE 80
 
-# Start Apache
-CMD ["apache2-foreground"]
+# Generate Laravel key and start Apache
+CMD php artisan key:generate --force && apache2-foreground

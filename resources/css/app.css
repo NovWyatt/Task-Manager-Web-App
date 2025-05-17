@@ -1,0 +1,26 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.fixed {
+    position: fixed;
+}
+.inset-0 {
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+}
+.overflow-y-auto {
+    overflow-y: auto;
+}
+.hidden {
+    display: none;
+}
+.bg-opacity-75 {
+    --tw-bg-opacity: 0.75;
+}
+.bg-gray-500 {
+    --tw-bg-opacity: 1;
+    background-color: rgba(107, 114, 128, var(--tw-bg-opacity));
+}

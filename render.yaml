@@ -28,8 +28,6 @@ services:
         value: pgsql
       - key: COMPOSER_MEMORY_LIMIT
         value: -1
-      - key: NODE_OPTIONS
-        value: --max-old-space-size=400
 
 databases:
   - name: task-manager-db

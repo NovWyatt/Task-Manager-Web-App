@@ -78,7 +78,8 @@
             "@php artisan view:clear",
             "chmod -R 777 storage",
             "chmod -R 777 bootstrap/cache"
-        ]
+        ],
+        "deploy-prep": "composer install && composer dump-autoload --optimize && npm ci && npm run build"
     },
     "extra": {
         "laravel": {

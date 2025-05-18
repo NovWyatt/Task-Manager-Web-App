@@ -41,18 +41,37 @@ RUN mv "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini" \
 # Thiết lập thư mục làm việc
 WORKDIR /var/www/html
 
-# Copy toàn bộ code ứng dụng (đã bao gồm vendor và các assets đã build)
+# Copy toàn bộ code ứng dụng
 COPY . .
 
-# Kiểm tra các file quan trọng
-RUN if [ ! -f "vendor/autoload.php" ]; then \
-    echo "Error: vendor/autoload.php is missing. Please run 'composer install' locally before building."; \
-    exit 1; \
-  fi \
-  && if [ ! -f "public/.htaccess" ]; then \
-    echo "Error: public/.htaccess is missing. Please create it before building."; \
-    exit 1; \
-  fi
+# Tạo .htaccess nếu không tồn tại
+RUN if [ ! -f "public/.htaccess" ]; then \
+    echo '<IfModule mod_rewrite.c>\n\
+    <IfModule mod_negotiation.c>\n\
+        Options -MultiViews -Indexes\n\
+    </IfModule>\n\
+    RewriteEngine On\n\
+    # Handle Authorization Header\n\
+    RewriteCond %{HTTP:Authorization} .\n\
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]\n\
+    # Redirect Trailing Slashes If Not A Folder...\n\
+    RewriteCond %{REQUEST_FILENAME} !-d\n\
+    RewriteCond %{REQUEST_URI} (.+)/$\n\
+    RewriteRule ^ %1 [L,R=301]\n\
+    # Send Requests To Front Controller...\n\
+    RewriteCond %{REQUEST_FILENAME} !-d\n\
+    RewriteCond %{REQUEST_FILENAME} !-f\n\
+    RewriteRule ^ index.php [L]\n\
+</IfModule>' > public/.htaccess; \
+fi
+
+# Cài đặt Composer
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+
+# Cài đặt vendor nếu cần
+RUN if [ ! -d "vendor" ] || [ ! -f "vendor/autoload.php" ]; then \
+    COMPOSER_ALLOW_SUPERUSER=1 composer install --no-dev --optimize-autoloader --no-scripts --no-interaction; \
+fi
 
 # Thiết lập quyền cho các thư mục
 RUN chown -R www-data:www-data /var/www/html \
@@ -72,12 +91,6 @@ RUN echo '#!/bin/bash\n\
 set -e\n\
 \n\
 echo "Starting Laravel application..."\n\
-\n\
-# Đợi database (nếu cần)\n\
-#until nc -z -v -w30 $DB_HOST $DB_PORT; do\n\
-#  echo "Waiting for database connection..."\n\
-#  sleep 2\n\
-#done\n\
 \n\
 # Cache cấu hình để tối ưu hiệu suất\n\
 if [ "$APP_ENV" = "production" ]; then\n\

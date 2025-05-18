@@ -1,9 +1,13 @@
 FROM php:8.2-apache
 
-# Cài đặt extensions
+# Cài đặt extensions và dependencies
 RUN apt-get update && apt-get install -y \
     libpq-dev \
-    && docker-php-ext-install pdo pdo_pgsql pgsql \
+    libzip-dev \  # Thêm libzip-dev
+    libpng-dev \
+    zip \
+    unzip \
+    && docker-php-ext-install pdo pdo_pgsql pgsql zip gd \  # Thêm zip
     && a2enmod rewrite headers
 
 # Cấu hình Apache
@@ -15,8 +19,11 @@ RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-av
 # Thiết lập thư mục làm việc
 WORKDIR /var/www/html
 
-# Copy mã nguồn ứng dụng (bao gồm vendor và public/.htaccess đã tạo local)
+# Copy mã nguồn ứng dụng
 COPY . .
+
+# Thêm vào Dockerfile
+COPY config/backup.php /var/www/html/config/backup.php
 
 # Thiết lập quyền
 RUN chown -R www-data:www-data /var/www/html \
@@ -24,13 +31,11 @@ RUN chown -R www-data:www-data /var/www/html \
     && chmod -R 755 /var/www/html/bootstrap/cache
 
 # Tạo script khởi động
-RUN echo '#!/bin/bash\n\
-php artisan key:generate --force\n\
-apache2-foreground' > /usr/local/bin/start.sh \
-    && chmod +x /usr/local/bin/start.sh
+COPY docker-entrypoint.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
 # Expose port
 EXPOSE 80
 
 # Start Apache
-CMD ["/usr/local/bin/start.sh"]
+CMD ["/usr/local/bin/docker-entrypoint.sh"]

@@ -24,10 +24,9 @@ RUN chown -R www-data:www-data /var/www/html \
     && chmod -R 755 /var/www/html/bootstrap/cache
 
 # Tạo script khởi động
-RUN echo '#!/bin/bash
-php artisan key:generate --force
-apache2-foreground
-' > /usr/local/bin/start.sh \
+RUN echo '#!/bin/bash\n\
+php artisan key:generate --force\n\
+apache2-foreground' > /usr/local/bin/start.sh \
     && chmod +x /usr/local/bin/start.sh
 
 # Expose port

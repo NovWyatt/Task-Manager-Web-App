@@ -1,4 +1,4 @@
-echo "<IfModule mod_rewrite.c>
+<IfModule mod_rewrite.c>
     <IfModule mod_negotiation.c>
         Options -MultiViews -Indexes
     </IfModule>
@@ -18,4 +18,4 @@ echo "<IfModule mod_rewrite.c>
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteRule ^ index.php [L]
-</IfModule>" > public/.htaccess
+</IfModule>
